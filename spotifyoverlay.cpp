@@ -114,6 +114,26 @@ void SpotifyOverlay::initManifest()
     vr::VRApplications()->SetApplicationAutoLaunch(appKey, true);
 }
 
+void SpotifyOverlay::onOverlayShown()
+{
+    // If we haven't already established a connection to Spotify,
+    // try again. This way, the overlay will continue to work even
+    // if Spotify wasn't running at the time of application start.
+    if (key_OAuth.length() <= 0)
+    {
+        getTokenOAuth();
+    }
+    else if (key_CSRF.length() <= 0)
+    {
+        getTokenCSRF();
+    }
+}
+
+bool SpotifyOverlay::isConnectedToSpotify()
+{
+    return key_OAuth.length() > 0 && key_CSRF.length() > 0;
+}
+
 void SpotifyOverlay::initNetwork()
 {
     // Initialize network manager and SSL config.
@@ -185,7 +205,8 @@ void SpotifyOverlay::csrf_result()
 
         qDebug().noquote() << "Retrieved CSRF key of length " + QString::number(key_CSRF.length());
 
-        getSpotifyStatus();
+        if (key_OAuth.length() > 0 && key_CSRF.length() > 0)
+            getSpotifyStatus();
     }
 }
 
@@ -310,6 +331,9 @@ void SpotifyOverlay::setIsPlaying(bool playing)
 
 void SpotifyOverlay::playToggle()
 {
+    if (!isConnectedToSpotify())
+        return;
+
     if (isPlaying)
     {
         pause();
@@ -473,6 +497,9 @@ void SpotifyOverlay::search_scrollDown()
 
 void SpotifyOverlay::openKeyboard()
 {
+    if (!isConnectedToSpotify())
+        return;
+
     vr::VROverlay()->ShowKeyboardForOverlay(COpenVROverlayController::SharedInstance()->m_ulOverlayHandle, vr::k_EGamepadTextInputModeNormal, vr::k_EGamepadTextInputLineModeSingleLine, "Search", 256, "", false, 0);
 
     vr::VREvent_t pEvent;

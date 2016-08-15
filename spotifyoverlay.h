@@ -33,6 +33,8 @@ public:
     ~SpotifyOverlay();
 
     void initManifest();
+    void onOverlayShown();
+    bool isConnectedToSpotify();
 
     const char* appKey = "spotify.dashboard.overlay";
 

@@ -21,3 +21,5 @@ LIBS            += -L$$PWD/lib/win64 -lopenvr_api \
 RESOURCES       += res.qrc
 
 win32:RC_ICONS  += img/spotify_overlay.ico
+
+VERSION = 1.0

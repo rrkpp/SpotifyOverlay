@@ -14,6 +14,7 @@
 #include <QtWidgets/QGraphicsEllipseItem>
 #include <QCursor>
 #include <QDebug>
+#include "spotifyoverlay.h"
 
 using namespace vr;
 
@@ -302,7 +303,10 @@ void COpenVROverlayController::OnTimeoutPumpEvents()
 
 		case vr::VREvent_OverlayShown:
 			{
+                UpdateThumbnail();
+
 				m_pWidget->repaint();
+                ((SpotifyOverlay*) m_pWidget)->onOverlayShown();
 			}
 			break;
 
