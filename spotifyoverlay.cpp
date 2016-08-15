@@ -261,6 +261,8 @@ void SpotifyOverlay::play(int resultId)
 
     setIsPlaying(true);
 
+    qDebug().noquote() << "Playing track '" + sr.song + "' by '" + sr.artist + "' with URI: " + sr.trackUri;
+
     // First, send a request to the local Spotify server
     // for Spotify to play the selected track.
     QNetworkRequest request;
@@ -285,6 +287,8 @@ void SpotifyOverlay::pause()
 {
     setIsPlaying(false);
 
+    qDebug().noquote() << "Pausing..";
+
     QNetworkRequest request;
 
     request.setSslConfiguration(sslConfig);
@@ -297,6 +301,8 @@ void SpotifyOverlay::pause()
 void SpotifyOverlay::unpause()
 {
     setIsPlaying(true);
+
+    qDebug().noquote() << "Unpausing..";
 
     QNetworkRequest request;
 
@@ -325,6 +331,8 @@ void SpotifyOverlay::playToggle()
 {
     if (!isConnectedToSpotify())
         return;
+
+    qDebug().noquote() << "Toggling play..";
 
     if (isPlaying)
     {
@@ -489,8 +497,12 @@ void SpotifyOverlay::search_scrollDown()
 
 void SpotifyOverlay::openKeyboard()
 {
+    qDebug().noquote() << "openKeyboard() - Pre-Spotify Check";
+
     if (!isConnectedToSpotify())
         return;
+
+    qDebug().noquote() << "openKeyboard() - Post-Spotify Check";
 
     vr::VROverlay()->ShowKeyboardForOverlay(COpenVROverlayController::SharedInstance()->m_ulOverlayHandle, vr::k_EGamepadTextInputModeNormal, vr::k_EGamepadTextInputLineModeSingleLine, "Search", 256, "", false, 0);
 
