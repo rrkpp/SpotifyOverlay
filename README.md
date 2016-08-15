@@ -1,6 +1,8 @@
 # SpotifyOverlay
 A third-party Spotify client built specifically for OpenVR.
 
+![alt text](https://i.imgur.com/xxSJjpn.png "Spotify Overlay")
+
 ## Installation
 Download this repo and put the files in /bin somewhere, run SpotifyOverlay.exe. Alternatively, just download the files from /bin individually and put them somewhere. Installer will be provided once testing is complete and there is an "official" release. The application will automatically generate a .vrmanifest file and set the overlay to auto-start whenever you boot SteamVR (Thanks to code taken from LibreVR's Revive project). If you don't want the overlay to run every time SteamVR runs, you can disable it in SteamVR > Settings > Applications.
 
