@@ -1,7 +1,7 @@
 # SpotifyOverlay
 A third-party Spotify client built specifically for OpenVR.
 
-![alt text](https://i.imgur.com/xxSJjpn.png "Spotify Overlay")
+[![Spotify Overlay](https://i.imgur.com/xxSJjpn.png)](https://www.youtube.com/watch?v=4vb6xc_aLWk)
 
 ## Installation
 Download all the files in /bin and put them somewhere on your computer, then run SpotifyOverlay.exe. Alternatively, you can download everything as a .zip archive [here](https://github.com/rrkpp/SpotifyOverlay/blob/master/release/SpotifyOverlay_v1_0.zip?raw=true) and extract it somewhere.

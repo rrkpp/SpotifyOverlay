@@ -127,6 +127,10 @@ void SpotifyOverlay::onOverlayShown()
     {
         getTokenCSRF();
     }
+    else
+    {
+        getSpotifyStatus();
+    }
 }
 
 bool SpotifyOverlay::isConnectedToSpotify()
@@ -208,18 +212,6 @@ void SpotifyOverlay::csrf_result()
         if (key_OAuth.length() > 0 && key_CSRF.length() > 0)
             getSpotifyStatus();
     }
-}
-
-void SpotifyOverlay::getSpotifyStatus()
-{
-    QNetworkRequest request;
-
-    request.setSslConfiguration(sslConfig);
-    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/status.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF))); // TODO: Randomize subdomain and port number.
-    request.setRawHeader("Origin", "https://open.spotify.com");
-
-    QNetworkReply* reply = netMgr->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(spotifyStatus_result()));
 }
 
 void SpotifyOverlay::updateSearchResults()
@@ -361,7 +353,7 @@ void SpotifyOverlay::skip_prev()
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
 
-    getSpotifyStatus();
+    QTimer::singleShot(250, this, SLOT(getSpotifyStatus()));
 }
 
 void SpotifyOverlay::skip_next()
@@ -381,7 +373,7 @@ void SpotifyOverlay::skip_next()
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
 
-    getSpotifyStatus();
+    QTimer::singleShot(250, this, SLOT(getSpotifyStatus()));
 }
 
 
@@ -526,9 +518,21 @@ void SpotifyOverlay::openKeyboard()
 
 /*
  * =============================================
- * STATUS/INFO/RESPONSE FUNCTIONS
+ * PRIVATE SLOTS
  * =============================================
  */
+
+void SpotifyOverlay::getSpotifyStatus()
+{
+    QNetworkRequest request;
+
+    request.setSslConfiguration(sslConfig);
+    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/status.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF))); // TODO: Randomize subdomain and port number.
+    request.setRawHeader("Origin", "https://open.spotify.com");
+
+    QNetworkReply* reply = netMgr->get(request);
+    connect(reply, SIGNAL(finished()), this, SLOT(spotifyStatus_result()));
+}
 
 // TODO: Periodic status updates in case users are messing around
 // via mobile, other PC's, the desktop, etc..

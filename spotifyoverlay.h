@@ -43,7 +43,6 @@ private:
 
     void getTokenOAuth();
     void getTokenCSRF();
-    void getSpotifyStatus();
     void updateSearchResults();
 
     void play(int resultId);
@@ -91,6 +90,7 @@ private slots:
 
     void openKeyboard();
 
+    void getSpotifyStatus();
     void spotifyStatus_result();
     void trackInfo_result();
     void albumArt_result();
