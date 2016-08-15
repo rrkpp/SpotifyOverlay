@@ -7,10 +7,22 @@
 #include <QUrl>
 #include <QJsonArray>
 #include <QVBoxLayout>
+#include <QScrollBar>
 
 namespace Ui {
     class SpotifyOverlay;
 }
+
+struct SearchResult {
+    int trackNum;
+
+    QString trackUri;
+    QString albumUri;
+
+    QString song;
+    QString artist;
+    QString album;
+};
 
 class SpotifyOverlay : public QMainWindow
 {
@@ -21,20 +33,24 @@ public:
     ~SpotifyOverlay();
 
     void initManifest();
-    void pause();
-    void unpause();
 
     const char* appKey = "spotify.dashboard.overlay";
 
 private:
     void initNetwork();
+
     void getTokenOAuth();
     void getTokenCSRF();
     void getSpotifyStatus();
+    void updateSearchResults();
+
+    void play(int resultId);
+    void pause();
+    void unpause();
+
     void setIsPlaying(bool playing);
 
     Ui::SpotifyOverlay* ui;
-    QVBoxLayout searchLayout;
 
     QNetworkAccessManager* netMgr;
     QSslConfiguration sslConfig;
@@ -50,13 +66,17 @@ private:
 
     bool isPlaying = false;
     bool keyboardOpen = false;
-    const int maxResults = 5;
+
+    SearchResult* searchResults;
+    const int maxResults = 25;      // Number of results requested from Spotify
+    int maxResultsDisplayed = 5;    // Number of buttons available for search results
+    int resultCount = 0;            // Number of results actually returned by Spotify
+    int scrollOffset = 0;           // How far down the results list we should be scrolled
 
 private slots:
     void oath_result();
     void csrf_result();
 
-    void play(QString uri);
     void playToggle();
     void skip_prev();
     void skip_next();
@@ -64,12 +84,14 @@ private slots:
     void search();
     void search_result();
     void search_selected();
+    void search_scrollUp();
+    void search_scrollDown();
 
     void openKeyboard();
 
-    void updateSpotifyStatus();
-    void updateTrackInfo();
-    void albumArtDownloaded();
+    void spotifyStatus_result();
+    void trackInfo_result();
+    void albumArt_result();
 };
 
 #endif // SPOTIFYOVERLAY_H

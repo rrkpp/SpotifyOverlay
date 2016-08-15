@@ -31,8 +31,8 @@ QLineEdit {
    <widget class="QPushButton" name="playButton">
     <property name="geometry">
      <rect>
-      <x>620</x>
-      <y>340</y>
+      <x>660</x>
+      <y>360</y>
       <width>130</width>
       <height>130</height>
      </rect>
@@ -59,7 +59,7 @@ QLineEdit {
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>791</width>
+      <width>761</width>
       <height>41</height>
      </rect>
     </property>
@@ -79,26 +79,27 @@ QLineEdit {
    <widget class="QPushButton" name="searchButton">
     <property name="geometry">
      <rect>
-      <x>810</x>
+      <x>780</x>
       <y>10</y>
-      <width>81</width>
+      <width>111</width>
       <height>41</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>10</pointsize>
+      <family>Open Sans</family>
+      <pointsize>12</pointsize>
       <weight>75</weight>
+      <italic>false</italic>
       <bold>true</bold>
      </font>
     </property>
     <property name="styleSheet">
      <string notr="true">border-radius: 5px;
-	border: 2px solid black;
-	background-color: #2ebd59;
-	color: white;
-	font-weight: bold;
-	background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(51, 213, 99, 255), stop:1 rgba(33, 143, 64, 255));</string>
+border: 2px solid black;
+color: white;
+font-weight: bold;
+background-color: #1ed760;</string>
     </property>
     <property name="text">
      <string>Search</string>
@@ -131,8 +132,8 @@ QLineEdit {
      <rect>
       <x>190</x>
       <y>320</y>
-      <width>341</width>
-      <height>41</height>
+      <width>491</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="font">
@@ -152,15 +153,15 @@ QLineEdit {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>410</y>
-      <width>341</width>
-      <height>31</height>
+      <y>420</y>
+      <width>381</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Open Sans</family>
-      <pointsize>20</pointsize>
+      <pointsize>22</pointsize>
      </font>
     </property>
     <property name="styleSheet">
@@ -174,8 +175,8 @@ QLineEdit {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>360</y>
-      <width>341</width>
+      <y>370</y>
+      <width>381</width>
       <height>31</height>
      </rect>
     </property>
@@ -192,38 +193,11 @@ QLineEdit {
      <string/>
     </property>
    </widget>
-   <widget class="QScrollArea" name="searchResults">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>60</y>
-      <width>881</width>
-      <height>251</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: #AA232323;
-border: 1px solid black;</string>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>879</width>
-       <height>249</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
    <widget class="QPushButton" name="prevButton">
     <property name="geometry">
      <rect>
-      <x>540</x>
-      <y>370</y>
+      <x>580</x>
+      <y>390</y>
       <width>70</width>
       <height>70</height>
      </rect>
@@ -248,8 +222,8 @@ border: 1px solid black;</string>
    <widget class="QPushButton" name="nextButton">
     <property name="geometry">
      <rect>
-      <x>760</x>
-      <y>370</y>
+      <x>800</x>
+      <y>390</y>
       <width>70</width>
       <height>70</height>
      </rect>
@@ -271,7 +245,7 @@ border: 1px solid black;</string>
      </size>
     </property>
    </widget>
-   <widget class="QWidget" name="widget" native="true">
+   <widget class="QWidget" name="bottomAccent" native="true">
     <property name="geometry">
      <rect>
       <x>-1</x>
@@ -290,7 +264,248 @@ border: 1px solid black;</string>
      <string notr="true">background-color: #1ed760;</string>
     </property>
    </widget>
-   <zorder>widget</zorder>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>841</width>
+      <height>252</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="searchLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="searchResultBtn1">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: #232323;
+	border: 1px solid black;
+}
+
+QPushButton:hover {
+	background-color: #393939
+}
+
+QPushButton * {
+	border: none;
+	background: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="searchResultBtn2">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: #232323;
+	border: 1px solid black;
+	border-top: none;
+}
+
+QPushButton:hover {
+	background-color: #393939
+}
+
+QPushButton * {
+	border: none;
+	background: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="searchResultBtn3">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: #232323;
+	border: 1px solid black;
+	border-top: none;
+}
+
+QPushButton:hover {
+	background-color: #393939
+}
+
+QPushButton * {
+	border: none;
+	background: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="searchResultBtn4">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: #232323;
+	border: 1px solid black;
+	border-top: none;
+}
+
+QPushButton:hover {
+	background-color: #393939
+}
+
+QPushButton * {
+	border: none;
+	background: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="searchResultBtn5">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+	background-color: #232323;
+	border: 1px solid black;
+	border-top: none;
+}
+
+QPushButton:hover {
+	background-color: #393939
+}
+
+QPushButton * {
+	border: none;
+	background: none;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QPushButton" name="scrollup">
+    <property name="geometry">
+     <rect>
+      <x>855</x>
+      <y>60</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="res.qrc">
+      <normaloff>:/img/arrow_up.png</normaloff>:/img/arrow_up.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>30</width>
+      <height>30</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="scrolldown">
+    <property name="geometry">
+     <rect>
+      <x>855</x>
+      <y>270</y>
+      <width>40</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="res.qrc">
+      <normaloff>:/img/arrow_down.png</normaloff>:/img/arrow_down.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>30</width>
+      <height>30</height>
+     </size>
+    </property>
+   </widget>
+   <zorder>bottomAccent</zorder>
    <zorder>playButton</zorder>
    <zorder>searchField</zorder>
    <zorder>searchButton</zorder>
@@ -298,9 +513,11 @@ border: 1px solid black;</string>
    <zorder>trackTitle</zorder>
    <zorder>trackArtist</zorder>
    <zorder>trackAlbum</zorder>
-   <zorder>searchResults</zorder>
    <zorder>prevButton</zorder>
    <zorder>nextButton</zorder>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>scrollup</zorder>
+   <zorder>scrolldown</zorder>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>

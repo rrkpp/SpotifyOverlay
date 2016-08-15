@@ -5,7 +5,8 @@
         <file>img/pause.png</file>
         <file>img/play.png</file>
         <file>img/prev.png</file>
-        <file>img/spotify.ico</file>
         <file>img/spotify_overlay.png</file>
+        <file>img/arrow_down.png</file>
+        <file>img/arrow_up.png</file>
     </qresource>
 </RCC>

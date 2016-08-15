@@ -13,31 +13,65 @@ SpotifyOverlay::SpotifyOverlay(QWidget* parent) :
     initNetwork();      // Set up network manager and SSL config.
     getTokenOAuth();    // When OAuth token is returned, the function to retrieve the CSRF token is called automatically.
 
-    // Configure search results' vertical layout.
-    searchLayout.setAlignment(Qt::AlignTop);
-    searchLayout.setSpacing(0);
-    searchLayout.setMargin(0);
-
     // Initialize Play/Pause icons.
     playIcon = QIcon(":/img/play.png");
     pauseIcon = QIcon(":/img/pause.png");
 
-    // TODO: Find a way to get past the fact that scrollbars are completely
-    // performance inept when running in OpenVR. For now, only 5 results.
-    ui->searchResults->widget()->setLayout(&searchLayout);
-    ui->searchResults->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // Set up search result buttons.
+    searchResults = new SearchResult[maxResults];
+
+    for (int i=0; i < maxResultsDisplayed; i++)
+    {
+        QHBoxLayout* layout = new QHBoxLayout();
+        layout->setSpacing(0);
+        layout->setMargin(0);
+
+        QLabel* titleLabel = new QLabel();
+        titleLabel->setObjectName("trackLabel");
+        titleLabel->setFont(QFont("Open Sans", 12, 500));
+        titleLabel->setMaximumWidth(250);
+        titleLabel->setStyleSheet("color: white;");
+
+        QLabel* artistLabel = new QLabel();
+        artistLabel->setObjectName("artistLabel");
+        artistLabel->setFont(QFont("Open Sans", 12));
+        artistLabel->setMaximumWidth(250);
+        artistLabel->setStyleSheet("color: white;");
+
+        QLabel* albumLabel = new QLabel();
+        albumLabel->setObjectName("albumLabel");
+        albumLabel->setFont(QFont("Open Sans", 12));
+        albumLabel->setMaximumWidth(250);
+        albumLabel->setStyleSheet("color: white;");
+
+        layout->addWidget(titleLabel);
+        layout->addWidget(artistLabel);
+        layout->addWidget(albumLabel);
+
+        QPushButton* btn = this->findChild<QPushButton*>("searchResultBtn" + QString::number(i + 1));
+
+        if (btn)
+        {
+            btn->setLayout(layout);
+            connect(btn, SIGNAL(released()), this, SLOT(search_selected()));
+        }
+    }
 
     // Connect SIGNALs/SLOTs.
     connect(ui->playButton, SIGNAL(released()), this, SLOT(playToggle()));
     connect(ui->prevButton, SIGNAL(released()), this, SLOT(skip_prev()));
     connect(ui->nextButton, SIGNAL(released()), this, SLOT(skip_next()));
     connect(ui->searchButton, SIGNAL(released()), this, SLOT(openKeyboard()));
+
+    connect(ui->scrollup, SIGNAL(released()), this, SLOT(search_scrollUp()));
+    connect(ui->scrolldown, SIGNAL(released()), this, SLOT(search_scrollDown()));
 }
 
 SpotifyOverlay::~SpotifyOverlay()
 {
     delete ui;
     delete netMgr;
+    delete searchResults;
 }
 
 void SpotifyOverlay::initManifest()
@@ -103,6 +137,25 @@ void SpotifyOverlay::getTokenOAuth()
     connect(reply, SIGNAL(finished()), this, SLOT(oath_result()));
 }
 
+void SpotifyOverlay::oath_result()
+{
+    QNetworkReply* result = (QNetworkReply*) sender();
+
+    if (result->size() > 0)
+    {
+        QString jsonString = QString(result->readAll());
+
+        QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
+        QJsonObject obj = doc.object();
+
+        key_OAuth = obj.value("t").toString();
+
+        qDebug().noquote() << "Retrieved OAuth key of length " + QString::number(key_OAuth.length());
+
+        getTokenCSRF();
+    }
+}
+
 void SpotifyOverlay::getTokenCSRF()
 {
     // Send a request to the local Spotify HTTPS
@@ -117,10 +170,27 @@ void SpotifyOverlay::getTokenCSRF()
     connect(reply, SIGNAL(finished()), this, SLOT(csrf_result()));
 }
 
+void SpotifyOverlay::csrf_result()
+{
+    QNetworkReply* result = (QNetworkReply*) sender();
+
+    if (result->size() > 0)
+    {
+        QString jsonString = QString(result->readAll());
+
+        QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
+        QJsonObject obj = doc.object();
+
+        key_CSRF = obj.value("token").toString();
+
+        qDebug().noquote() << "Retrieved CSRF key of length " + QString::number(key_CSRF.length());
+
+        getSpotifyStatus();
+    }
+}
+
 void SpotifyOverlay::getSpotifyStatus()
 {
-    qDebug() << "Checking status..";
-
     QNetworkRequest request;
 
     request.setSslConfiguration(sslConfig);
@@ -128,7 +198,100 @@ void SpotifyOverlay::getSpotifyStatus()
     request.setRawHeader("Origin", "https://open.spotify.com");
 
     QNetworkReply* reply = netMgr->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(updateSpotifyStatus()));
+    connect(reply, SIGNAL(finished()), this, SLOT(spotifyStatus_result()));
+}
+
+void SpotifyOverlay::updateSearchResults()
+{
+    for (int i=0; i < maxResultsDisplayed; i++)
+    {
+        SearchResult sr = searchResults[i + scrollOffset];
+        QPushButton* btn = this->findChild<QPushButton*>("searchResultBtn" + QString::number(i + 1));
+
+        if (btn)
+        {
+            QLabel* trackLabel = btn->findChild<QLabel*>("trackLabel");
+            QLabel* artistLabel = btn->findChild<QLabel*>("artistLabel");
+            QLabel* albumLabel = btn->findChild<QLabel*>("albumLabel");
+
+            QFontMetrics fm_track(trackLabel->font());
+            QString trackText = fm_track.elidedText(sr.song, Qt::ElideRight, trackLabel->width());
+
+            QFontMetrics fm_artist(artistLabel->font());
+            QString artistText = fm_artist.elidedText(sr.artist, Qt::ElideRight, artistLabel->width());
+
+            QFontMetrics fm_album(albumLabel->font());
+            QString albumText = fm_album.elidedText(sr.album, Qt::ElideRight, albumLabel->width());
+
+            trackLabel->setText(trackText);
+            artistLabel->setText(artistText);
+            albumLabel->setText(albumText);
+            btn->setProperty("resultId", i + scrollOffset);
+        }
+    }
+}
+
+
+
+/*
+ * =============================================
+ * PLAYBACK FUNCTIONS
+ * =============================================
+ */
+
+void SpotifyOverlay::play(int resultId)
+{
+    SearchResult sr = searchResults[resultId];
+
+    if (sr.trackUri.length() <= 0)
+        return;
+
+    setIsPlaying(true);
+
+    // First, send a request to the local Spotify server
+    // for Spotify to play the selected track.
+    QNetworkRequest request;
+
+    request.setSslConfiguration(sslConfig);
+    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/play.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&uri=" + QUrl::toPercentEncoding(sr.trackUri) + "&context=" + QUrl::toPercentEncoding(sr.albumUri))); // TODO: Randomize subdomain and port number.
+    request.setRawHeader("Origin", "https://open.spotify.com");
+
+    netMgr->get(request);
+
+    // Then, send a request to Spotify Web API and
+    // retrieve track info and album art.
+    request = QNetworkRequest();
+    request.setSslConfiguration(sslConfig);
+    request.setUrl(QUrl("https://api.spotify.com/v1/tracks/" + QUrl::toPercentEncoding(sr.trackUri.replace("spotify:track:", ""))));
+
+    QNetworkReply* reply = netMgr->get(request);
+    connect(reply, SIGNAL(finished()), this, SLOT(trackInfo_result()));
+}
+
+void SpotifyOverlay::pause()
+{
+    setIsPlaying(false);
+
+    QNetworkRequest request;
+
+    request.setSslConfiguration(sslConfig);
+    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/pause.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&pause=true")); // TODO: Randomize subdomain and port number.
+    request.setRawHeader("Origin", "https://open.spotify.com");
+
+    netMgr->get(request);
+}
+
+void SpotifyOverlay::unpause()
+{
+    setIsPlaying(true);
+
+    QNetworkRequest request;
+
+    request.setSslConfiguration(sslConfig);
+    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/pause.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&pause=false")); // TODO: Randomize subdomain and port number.
+    request.setRawHeader("Origin", "https://open.spotify.com");
+
+    netMgr->get(request);
 }
 
 void SpotifyOverlay::setIsPlaying(bool playing)
@@ -145,70 +308,6 @@ void SpotifyOverlay::setIsPlaying(bool playing)
     }
 }
 
-void SpotifyOverlay::oath_result()
-{
-    QNetworkReply* result = (QNetworkReply*) sender();
-
-    if (result->size() > 0)
-    {
-        QString jsonString = QString(result->readAll());
-
-        QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
-        QJsonObject obj = doc.object();
-
-        key_OAuth = obj.value("t").toString();
-
-        qDebug().noquote() << "Retrieved OAuth key: " + key_OAuth;
-
-        getTokenCSRF();
-    }
-}
-
-void SpotifyOverlay::csrf_result()
-{
-    QNetworkReply* result = (QNetworkReply*) sender();
-
-    if (result->size() > 0)
-    {
-        QString jsonString = QString(result->readAll());
-
-        QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
-        QJsonObject obj = doc.object();
-
-        key_CSRF = obj.value("token").toString();
-
-        qDebug().noquote() << "Retrieved CSRF key: " + key_CSRF;
-
-        getSpotifyStatus();
-    }
-}
-
-void SpotifyOverlay::play(QString uri)
-{
-    qDebug().noquote() << "Playing track: " + uri;
-
-    setIsPlaying(true);
-
-    // First, send a request to the local Spotify server
-    // for Spotify to play the selected track.
-    QNetworkRequest request;
-
-    request.setSslConfiguration(sslConfig);
-    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/play.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&uri=" + QUrl::toPercentEncoding(uri) + "&context=" + QUrl::toPercentEncoding(uri))); // TODO: Randomize subdomain and port number.
-    request.setRawHeader("Origin", "https://open.spotify.com");
-
-    netMgr->get(request);
-
-    // Then, send a request to Spotify Web API and
-    // retrieve track info and album art.
-    request = QNetworkRequest();
-    request.setSslConfiguration(sslConfig);
-    request.setUrl(QUrl("https://api.spotify.com/v1/tracks/" + QUrl::toPercentEncoding(uri.replace("spotify:track:", ""))));
-
-    QNetworkReply* reply = netMgr->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(updateTrackInfo()));
-}
-
 void SpotifyOverlay::playToggle()
 {
     if (isPlaying)
@@ -219,36 +318,6 @@ void SpotifyOverlay::playToggle()
     {
         unpause();
     }
-}
-
-void SpotifyOverlay::pause()
-{
-    qDebug() << "Pausing track..";
-
-    setIsPlaying(false);
-
-    QNetworkRequest request;
-
-    request.setSslConfiguration(sslConfig);
-    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/pause.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&pause=true")); // TODO: Randomize subdomain and port number.
-    request.setRawHeader("Origin", "https://open.spotify.com");
-
-    netMgr->get(request);
-}
-
-void SpotifyOverlay::unpause()
-{
-    qDebug() << "Unpausing track..";
-
-    setIsPlaying(true);
-
-    QNetworkRequest request;
-
-    request.setSslConfiguration(sslConfig);
-    request.setUrl(QUrl("https://aaaaaaaaaa.spotilocal.com:4370/remote/pause.json?oauth=" + QUrl::toPercentEncoding(key_OAuth) + "&csrf=" + QUrl::toPercentEncoding(key_CSRF) + "&pause=false")); // TODO: Randomize subdomain and port number.
-    request.setRawHeader("Origin", "https://open.spotify.com");
-
-    netMgr->get(request);
 }
 
 void SpotifyOverlay::skip_prev()
@@ -291,13 +360,20 @@ void SpotifyOverlay::skip_next()
     getSpotifyStatus();
 }
 
+
+
+/*
+ * =============================================
+ * SEARCH FUNCTIONS
+ * =============================================
+ */
+
 void SpotifyOverlay::search()
 {
     QString query = ui->searchField->text();
-
-    qDebug().noquote() << "Searching: " + query;
-
     QNetworkRequest request;
+
+    scrollOffset = 0;
 
     request.setSslConfiguration(sslConfig);
     request.setUrl(QUrl("https://api.spotify.com/v1/search?q=" + query + "&type=track&limit=" + QString::number(maxResults)));
@@ -310,18 +386,6 @@ void SpotifyOverlay::search_result()
 {
     QNetworkReply* result = (QNetworkReply*) sender();
 
-    // Clear out the old search results before attempting
-    // to populate the list with new results.
-    QLayout* resultsLayout = ui->searchResults->widget()->layout();
-    QLayoutItem* item;
-
-    while (resultsLayout->count() > 0)
-    {
-        item = resultsLayout->takeAt(0);
-        delete item->widget();
-        delete item;
-    }
-
     if (result->size() > 0)
     {
         QString jsonString = QString(result->readAll());
@@ -330,58 +394,82 @@ void SpotifyOverlay::search_result()
         QJsonObject obj = doc.object();
         QJsonArray tracks = obj.value("tracks").toObject().value("items").toArray();
 
+        resultCount = tracks.size();
+
         // Iterate through search results and populate result list.
-        for (int i=0; i < tracks.size(); i++)
+        for (int i=0; i < resultCount; i++)
         {
             QJsonObject track = tracks[i].toObject();
-            QString title = track.value("name").toString();
-            QString artist = track.value("artists").toArray()[0].toObject().value("name").toString();
-            QString album = track.value("album").toObject().value("name").toString();
 
-            QPushButton* widget = new QPushButton();
-            widget->setMinimumHeight(50);
-            widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-            widget->setStyleSheet("QPushButton {background-color: #232323; border: none; border-bottom: 1px solid black;} QPushButton:hover {background-color: #393939} QPushButton * {border: none; background: none;}");
+            SearchResult sr;
+            sr.song = track.value("name").toString();
+            sr.artist = track.value("artists").toArray()[0].toObject().value("name").toString();
+            sr.album = track.value("album").toObject().value("name").toString();
+            sr.trackUri = track.value("uri").toString();
+            sr.albumUri = track.value("album").toObject().value("uri").toString();
+            sr.trackNum = track.value("track_number").toInt();
 
-            QHBoxLayout* layout = new QHBoxLayout();
-            layout->setSpacing(0);
-            layout->setMargin(0);
+            searchResults[i] = sr;
 
-            QLabel* titleLabel = new QLabel(title);
-            titleLabel->setFont(QFont("Open Sans", 12, 500));
-            titleLabel->setMaximumWidth(250);
-            titleLabel->setStyleSheet("color: white;");
+            if (i < maxResultsDisplayed)
+            {
+                QPushButton* btn = this->findChild<QPushButton*>("searchResultBtn" + QString::number(i + 1));
 
-            QLabel* artistLabel = new QLabel(artist);
-            artistLabel->setFont(QFont("Open Sans", 12));
-            artistLabel->setMaximumWidth(250);
-            artistLabel->setStyleSheet("color: white;");
+                if (btn)
+                {
+                    QLabel* trackLabel = btn->findChild<QLabel*>("trackLabel");
+                    QLabel* artistLabel = btn->findChild<QLabel*>("artistLabel");
+                    QLabel* albumLabel = btn->findChild<QLabel*>("albumLabel");
 
-            QLabel* albumLabel = new QLabel(album);
-            albumLabel->setFont(QFont("Open Sans", 12));
-            albumLabel->setMaximumWidth(250);
-            albumLabel->setStyleSheet("color: white;");
+                    QFontMetrics fm_track(trackLabel->font());
+                    QString trackText = fm_track.elidedText(sr.song, Qt::ElideRight, trackLabel->width());
 
-            layout->addWidget(titleLabel);
-            layout->addWidget(artistLabel);
-            layout->addWidget(albumLabel);
+                    QFontMetrics fm_artist(artistLabel->font());
+                    QString artistText = fm_artist.elidedText(sr.artist, Qt::ElideRight, artistLabel->width());
 
-            widget->setLayout(layout);
-            widget->setProperty("uri", track.value("uri").toString());
+                    QFontMetrics fm_album(albumLabel->font());
+                    QString albumText = fm_album.elidedText(sr.album, Qt::ElideRight, albumLabel->width());
 
-            connect(widget, SIGNAL(released()), this, SLOT(search_selected()));
-
-            ui->searchResults->widget()->layout()->addWidget(widget);
-            ui->searchResults->widget()->adjustSize();
+                    trackLabel->setText(trackText);
+                    artistLabel->setText(artistText);
+                    albumLabel->setText(albumText);
+                    btn->setProperty("resultId", i);
+                }
+            }
         }
     }
 }
 
 void SpotifyOverlay::search_selected()
 {
-    QString uri = sender()->property("uri").toString();
-    play(uri);
+    int resultId = sender()->property("resultId").toInt();
+
+    play(resultId);
 }
+
+void SpotifyOverlay::search_scrollUp()
+{
+    if (scrollOffset > 0)
+        scrollOffset -= 1;
+
+    updateSearchResults();
+}
+
+void SpotifyOverlay::search_scrollDown()
+{
+    if (scrollOffset < resultCount - maxResultsDisplayed)
+        scrollOffset += 1;
+
+    updateSearchResults();
+}
+
+/*
+ * =============================================
+ * END SEARCH FUNCTIONS
+ * =============================================
+ */
+
+
 
 void SpotifyOverlay::openKeyboard()
 {
@@ -407,9 +495,17 @@ void SpotifyOverlay::openKeyboard()
     search();
 }
 
+
+
+/*
+ * =============================================
+ * STATUS/INFO/RESPONSE FUNCTIONS
+ * =============================================
+ */
+
 // TODO: Periodic status updates in case users are messing around
 // via mobile, other PC's, the desktop, etc..
-void SpotifyOverlay::updateSpotifyStatus()
+void SpotifyOverlay::spotifyStatus_result()
 {
     QNetworkReply* result = (QNetworkReply*) sender();
 
@@ -429,24 +525,33 @@ void SpotifyOverlay::updateSpotifyStatus()
         request.setUrl(QUrl("https://api.spotify.com/v1/tracks/" + QUrl::toPercentEncoding(uri.replace("spotify:track:", ""))));
 
         QNetworkReply* reply = netMgr->get(request);
-        connect(reply, SIGNAL(finished()), this, SLOT(updateTrackInfo()));
+        connect(reply, SIGNAL(finished()), this, SLOT(trackInfo_result()));
     }
 }
 
-void SpotifyOverlay::updateTrackInfo()
+void SpotifyOverlay::trackInfo_result()
 {
     QNetworkReply* result = (QNetworkReply*) sender();
 
     if (result->size() > 0)
-    {
+    {   
         QString jsonString = QString(result->readAll());
 
         QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8());
         QJsonObject obj = doc.object();
 
-        ui->trackTitle->setText(obj.value("name").toString());
-        ui->trackAlbum->setText(obj.value("album").toObject().value("name").toString());
-        ui->trackArtist->setText(obj.value("artists").toArray()[0].toObject().value("name").toString());
+        QFontMetrics fm_track(ui->trackTitle->font());
+        QString trackText = fm_track.elidedText(obj.value("name").toString(), Qt::ElideRight, ui->trackTitle->width());
+
+        QFontMetrics fm_artist(ui->trackAlbum->font());
+        QString artistText = fm_artist.elidedText(obj.value("artists").toArray()[0].toObject().value("name").toString(), Qt::ElideRight, ui->trackAlbum->width());
+
+        QFontMetrics fm_album(ui->trackArtist->font());
+        QString albumText = fm_album.elidedText(obj.value("album").toObject().value("name").toString(), Qt::ElideRight, ui->trackArtist->width());
+
+        ui->trackTitle->setText(trackText);
+        ui->trackAlbum->setText(albumText);
+        ui->trackArtist->setText(artistText);
 
         QString artUrl = obj.value("album").toObject().value("images").toArray()[0].toObject().value("url").toString();
 
@@ -454,11 +559,11 @@ void SpotifyOverlay::updateTrackInfo()
         request.setUrl(QUrl(artUrl));
 
         QNetworkReply* reply = netMgr->get(request);
-        connect(reply, SIGNAL(finished()), this, SLOT(albumArtDownloaded()));
+        connect(reply, SIGNAL(finished()), this, SLOT(albumArt_result()));
     }
 }
 
-void SpotifyOverlay::albumArtDownloaded()
+void SpotifyOverlay::albumArt_result()
 {
     QNetworkReply* result = (QNetworkReply*) sender();
 
